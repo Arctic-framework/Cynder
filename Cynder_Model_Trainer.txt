@@ -1,0 +1,147 @@
+from tensorflow.keras.layers import GlobalAveragePooling2D, Dense
+from tensorflow.keras.models import Model
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.preprocessing import image_dataset_from_directory
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+import tensorflow as tf
+import cv2
+import numpy as np
+import os
+import colorama
+from keras.utils import to_categorical
+from tensorflow.keras.callbacks import LearningRateScheduler
+from tensorflow.keras.regularizers import l2
+
+
+
+#Test Directory r"\Data\Cynder\Test"
+
+#Train directory r"\Data\Cynder\train"
+
+
+class_names = ['Train_Validate', 'Train_Data', 'Test_Data', 'Test_Validate', "Test_Back", "Train_Back", "Train_Empty", "Test_Empty"]
+
+# Define the base VGG19 model with pre-trained weights
+base_model = tf.keras.applications.InceptionV3(weights='imagenet', include_top=False, input_shape=(224, 224, 3))
+
+# Freeze the base model layers
+for layer in base_model.layers:
+    layer.trainable = False
+
+# Add a custom classification head
+num_classes = 4
+x = base_model.output
+x = GlobalAveragePooling2D()(x)
+x = Dense(1024, activation='relu', kernel_regularizer=l2(0.1))(x)
+predictions = Dense(num_classes, activation='sigmoid')(x)
+
+# Define the fine-tuned model
+from tensorflow.keras.regularizers import l2
+
+# Add a custom classification head with weight decay
+num_classes = 2
+x = base_model.output
+x = GlobalAveragePooling2D()(x)
+x = Dense(1024, activation='relu', kernel_regularizer=l2(0.01))(x)
+predictions = Dense(num_classes, activation='sigmoid')(x)
+
+# Define the fine-tuned model with weight decay
+model = Model(inputs=base_model.input, outputs=predictions)
+
+# Compile the model with weight decay
+model.compile(optimizer=Adam(learning_rate=0.001),
+              loss='binary_crossentropy',
+              metrics=['accuracy'])
+
+# Define the data augmentation
+train_datagen = ImageDataGenerator(rotation_range=30,
+                                   rescale=1./255,
+                                   validation_split=0.2)
+
+# Load the training dataset with data augmentation
+train_dataset = train_datagen.flow_from_directory(
+    r"\Data\Cynder\train",
+    target_size=(224, 234),  # update target_size to desired size
+    batch_size=64,
+    class_mode='categorical',
+    shuffle=True,
+    seed=123,
+    subset='training')
+
+# Load the validation dataset
+validation_dataset = image_dataset_from_directory(
+    r"\Data\Cynder\Test",
+    labels='inferred',
+    label_mode='categorical',
+    color_mode='rgb',
+    batch_size=64,
+    image_size=(224, 224),  # update image_size to desired size
+    shuffle=True,
+    seed=123,
+    validation_split=0.2,
+    subset='validation'
+)
+
+# Train the model
+# ten epochs works unuslay well., 15 works better!
+history = model.fit(
+    train_dataset,
+    epochs=5,
+    validation_data=validation_dataset
+)
+
+# save the model!!
+model.save('my_model.h5')
+
+# Define the color and thickness of the bounding box
+color = (0, 255, 0) # green
+thickness = 2
+
+# Use the fine-tuned model for Skylanders figure recognition
+cap = cv2.VideoCapture(0)
+while True:
+    # Read the frame from the webcam
+    ret, frame = cap.read()
+    if not ret:
+        print("Failed to capture frame from webcam")
+        break
+
+    # Preprocess the frame for the model
+    img = cv2.resize(frame, (224, 224))
+    img = img / 255.0
+    img = np.expand_dims(img, axis=0)
+
+    # Make predictions on the frame
+    predictions = model.predict(img)
+
+    # Convert the predictions to class names
+    predicted_classes = np.argmax(predictions, axis=1)
+    class_names = ['Train_Validate', 'Train_Data', 'Test_Data', 'Test_Validate']
+    prediction = model.predict(img)
+    predicted_class = class_names[np.argmax(prediction)]
+    print(f"The peredicted class is {predicted_class}")
+    if np.max(predictions) > 0.7:
+        # Convert the image to grayscale
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+        # Apply thresholding to create a binary image
+        _, thresh = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY)
+
+        # Find contours in the binary image
+        contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        print("Perdicted Classes")
+        print(predicted_class)
+        for contour in contours:
+            x, y, w, h = cv2.boundingRect(contour)
+            cv2.rectangle(frame, (x, y), (x+w, y+h), color, thickness)
+
+    # Display the frame with the bounding box
+    cv2.imshow('Object Detection', frame)
+
+    # Exit on ESC
+    if cv2.waitKey(1) == 27:
+        break
+
+# Release the webcam and close the window
+cap.release()
+cv2.destroyAllWindows()
