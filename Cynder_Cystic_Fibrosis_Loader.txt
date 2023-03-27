@@ -1,0 +1,34 @@
+from tensorflow.keras.models import load_model
+import cv2
+import numpy as np
+
+# Load the model that you created
+model = load_model(r"\Cystic-Model.h5")
+
+# Define the color and thickness of the bounding box
+color = (0, 255, 0) # green
+thickness = 2
+
+# Load the image
+#img_path = r"Your_Full_Path_To_The_Image"
+img = cv2.imread(img_path)
+
+# Preprocess the image for the model
+img = cv2.resize(img, (224, 224))
+img = img / 255.0
+img = np.expand_dims(img, axis=0)
+
+# Make predictions on the image
+predictions = model.predict(img)
+
+# Convert the predictions to class names
+class_names = ['Train_Validate', 'Train_Data', 'Test_Data', 'Test_Validate']
+predicted_class = class_names[np.argmax(predictions)]
+print("Predicted Class:", predicted_class)
+
+print(np.max(predictions))
+if np.max(predictions) > 0.98:
+    print("You are lucky, you dont have cystic fibrosis :)")
+
+else:
+    print("Crap you have cystic fibrosis :(")
