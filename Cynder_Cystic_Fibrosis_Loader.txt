@@ -2,6 +2,8 @@ from tensorflow.keras.models import load_model
 import cv2
 import numpy as np
 
+print("THIS MODEL IS NOT TO BE USED IN THE PLACE OF A MEDICAL PROFESSIONAL, THIS WAS MADE FOR EDGUCATIONAL AND ENTERTAINMENT PURPOSES ONLY")
+
 # Load the model that you created
 model = load_model(r"\Cystic-Model.h5")
 
