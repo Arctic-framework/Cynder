@@ -13,7 +13,7 @@ from tensorflow.keras.callbacks import LearningRateScheduler
 from tensorflow.keras.regularizers import l2
 
 
-
+print("THIS MODEL IS NOT TO BE USED IN THE PLACE OF A MEDICAL PROFESSIONAL, THIS WAS MADE FOR EDGUCATIONAL AND ENTERTAINMENT PURPOSES ONLY")
 #Test Directory "\Data\Cynder\Test"
 
 #Train directory "\Data\Cynder\train"
