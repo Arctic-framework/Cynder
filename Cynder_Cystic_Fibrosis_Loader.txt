@@ -30,7 +30,7 @@ print("Predicted Class:", predicted_class)
 
 print(np.max(predictions))
 if np.max(predictions) > 0.98:
-    print("You are lucky, you dont have cystic fibrosis :)")
+    print("It looks like you may not have CF :)")
 
 else:
-    print("Crap you have cystic fibrosis :(")
+    print("Flagged for maybe containing CF or a lung abnormality:(")
